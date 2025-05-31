@@ -1,0 +1,13 @@
+//// Comando pra criar a tabela localmente
+
+CREATE TABLE tarefas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    tipo VARCHAR(100) NOT NULL,
+    descricao TEXT,
+    datadeentrega DATE NOT NULL,
+    quemCriou VARCHAR(255) NOT NULL,
+    INDEX idx_quemCriou (quemCriou),
+    INDEX idx_datadeentrega (datadeentrega),
+    INDEX idx_tipo (tipo)
+);
