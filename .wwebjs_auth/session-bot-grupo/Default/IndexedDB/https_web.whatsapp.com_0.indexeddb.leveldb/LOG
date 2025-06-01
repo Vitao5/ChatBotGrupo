@@ -1,0 +1,14 @@
+2025/05/31-21:17:16.220 2070 Reusing MANIFEST C:\Users\vitin\Desktop\projetos\ChatBot Grupo\.wwebjs_auth\session-bot-grupo\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/05/31-21:17:16.221 2070 Recovering log #427
+2025/05/31-21:17:16.234 2070 Reusing old log C:\Users\vitin\Desktop\projetos\ChatBot Grupo\.wwebjs_auth\session-bot-grupo\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000427.log 
+2025/05/31-21:17:17.716 2070 Manual compaction at level-0 from '\x00\xd9\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\xda\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/05/31-21:17:17.718 4240 Level-0 table #432: started
+2025/05/31-21:17:17.723 4240 Level-0 table #432: 118291 bytes OK
+2025/05/31-21:17:17.724 4240 Delete type=0 #427
+2025/05/31-21:17:17.725 4240 Manual compaction at level-0 from '\x00\xda\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\xdb\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/05/31-21:17:19.088 2f1c Compacting 1@1 + 1@2 files
+2025/05/31-21:17:19.159 2f1c Generated table #433@1: 66506 keys, 2065715 bytes
+2025/05/31-21:17:19.159 2f1c Compacted 1@1 + 1@2 files => 2065715 bytes
+2025/05/31-21:17:19.160 2f1c compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/05/31-21:17:19.160 2f1c Delete type=2 #429
+2025/05/31-21:17:19.160 2f1c Delete type=2 #432
