@@ -44,6 +44,7 @@ client.on('message', async (message) => {
     const chat = await message.getChat();
     const comandos = [
         { comando: '/todos', funcao: () => integrantesGrupo(client, chat, message) },
+
         {
             comando: '/ajuda', funcao: () => {
                 message.reply(`
@@ -59,7 +60,8 @@ client.on('message', async (message) => {
     ];
 
     await chat.sendStateTyping();
-    comandos.find(item => item.comando === message.body).funcao()
+   const comandoExecutar = comandos.find(item => item.comando === message.body)
+   if(!!comandoExecutar) comandoExecutar.funcao();
 
 });
 
