@@ -1,4 +1,3 @@
-2025/06/01-09:22:44.296 b94 Reusing MANIFEST C:\Users\vitin\Desktop\projetos\ChatBot Grupo\.wwebjs_auth\session-bot-grupo\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
-2025/06/01-09:22:44.296 b94 Recovering log #645
-2025/06/01-09:22:44.340 b94 Reusing old log C:\Users\vitin\Desktop\projetos\ChatBot Grupo\.wwebjs_auth\session-bot-grupo\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000645.log 
-2025/06/01-09:22:45.705 2718 Manual compaction at level-0 from ' >\x01\x00\x00\x00' @ 72057594037927935 : 1 .. ' ?\x01\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/01/22-21:18:56.433 3d24 Reusing MANIFEST C:\Users\vitin\Desktop\projetos\ChatBot Grupo\.wwebjs_auth\session-bot-grupo\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/01/22-21:18:56.433 3d24 Recovering log #27
+2026/01/22-21:18:56.452 3d24 Reusing old log C:\Users\vitin\Desktop\projetos\ChatBot Grupo\.wwebjs_auth\session-bot-grupo\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000027.log 

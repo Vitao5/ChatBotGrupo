@@ -11,12 +11,17 @@ const client = new Client({
         dataPath: './.wwebjs_auth'
     }),
     puppeteer: {
-        headless: true, // true para não abrir o navegador, false para abrir (bom para depurar)
+        headless: true,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-        ]
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+        ],
+        timeout: 60000
     }
 });
 
@@ -26,56 +31,51 @@ client.on('qr', qr => {
 });
 
 client.on('ready', () => {
-    console.log('Cliente está pronto! Conectado ao WhatsApp.');
+    console.log('bot ativo\n\n');
 });
 
-client.on('authenticated', () => {
-    console.log('Autenticado com sucesso! Sua sessão foi carregada.');
-});
-
-
-client.on('disconnected', reason => {
-    console.log('CLIENTE DESCONECTADO:', reason);
-    console.log('Tentando reinicializar...');
-    client.initialize().catch(err => console.error('Erro ao reinicializar:', err));
-});
 
 client.on('message', async (message) => {
-    const chat = await message.getChat();
-    const comandos = [
-        { comando: '/todos', funcao: () => integrantesGrupo(client, chat, message) },
 
-        {
-            comando: '/ajuda', funcao: () => {
-                message.reply(`
-        📌 *Meus comandos*
-        🚨 Mencionar todos os integrantes do grupo:
-        /todos
+    //verifica se a mensagem é do grupo da sala e e não é do proorio bot
+    if (message.fromMe || message.id.remote != process.env.ID_GRUPO_SALA) return;
 
-        ✨ Ver comandos disponíveis:
-        /ajuda`
-                );
+    try {
+        const chat = await message.getChat();
+        
+        const comandos = [
+            { 
+                comando: '/todos', 
+                funcao: async () => {
+                    const mentions = integrantesGrupo(chat, message);
+                    await message.reply('teste', undefined, { mentions, sendSeen: false });
+                }
             }
-        },
-    ];
+        ];
 
-    await chat.sendStateTyping();
-   const comandoExecutar = comandos.find(item => item.comando === message.body)
-   if(!!comandoExecutar) comandoExecutar.funcao();
-
+        const comandoExecutar = comandos.find(item => item.comando === message.body);
+        if (comandoExecutar) {
+            await chat.sendStateTyping();
+           setTimeout(async () => {
+             await comandoExecutar.funcao();
+           }, 1000);
+        }
+    } catch (error) {
+        console.error(error.message);
+    }
 });
 
-client.initialize()
+client.initialize().catch(err => {
+    console.error('erro de inicialização', err);
+    process.exit(1);
+});
 
-// Tratamento para encerrar o cliente corretamente ao receber sinais do sistema
 process.on('SIGTERM', async () => {
-    console.log('(SIGTERM) Encerrando o cliente...');
     await client.destroy();
     process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-    console.log('(SIGINT) Encerrando o cliente...');
     await client.destroy();
     process.exit(0);
 });
