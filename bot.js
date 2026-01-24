@@ -1,11 +1,65 @@
-import makeWASocket, { DisconnectReason, useMultiFileAuthState } from '@whiskeysockets/baileys'
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadMediaMessage } from '@whiskeysockets/baileys'
 import qrcode from 'qrcode-terminal'
 import cron from 'node-cron'
 import P from 'pino'
 import 'dotenv/config'
 import ical from "node-ical"
-import { format, addDays, isSameDay, isWithinInterval } from "date-fns"
+import { format, addDays, isSameDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import fs from 'fs'
+import sharp from 'sharp'
+
+async function enviarSticker(sock, from, caminhoSticker) {
+  try {
+    if (fs.existsSync(caminhoSticker)) {
+      const stickerBuffer = fs.readFileSync(caminhoSticker)
+      setTimeout(async () => {
+        await sock.sendMessage(from, { sticker: stickerBuffer })
+      }, 1000);
+      setTimeout(async () => {
+        await sock.sendMessage(from, { text: 'Ta na mão ƪ(˘⌣˘)ʃ' })
+      }, 1900);
+    } 
+  } catch (err) {
+    console.error('Erro ao enviar sticker:', err.message)
+  }
+}
+
+async function downloadImagemFigurinha(sock, msg) {
+  try {
+    const buffer = await downloadMediaMessage(msg, 'buffer', {}, {
+      reuploadRequired: false
+    })
+    return buffer
+  } catch (err) {
+    console.log('Não foi possível baixar a mídia:', err.message)
+    return null
+  }
+}
+
+async function processarMidiaComoSticker(sock, from, msg) {
+  const buffer = await downloadImagemFigurinha(sock, msg)
+  if (!buffer) {
+    await sock.sendMessage(from, { text: 'Não consegui processar essa foto' })
+    return
+  }
+
+  try {
+    const stickerBuffer = await sharp(buffer)
+      .resize(512, 512, {
+        fit: 'contain',
+        background: { r: 255, g: 255, b: 255, alpha: 0 }
+      })
+      .webp({ quality: 80 })
+      .toBuffer()
+
+    await sock.sendMessage(from, { sticker: stickerBuffer })
+  
+  } catch (err) {
+    console.log('Problema ao converter: ' + err.message)
+    await sock.sendMessage(from, { text: 'Falhei na conversão ( ﾉ ﾟｰﾟ)ﾉ, tenta ai novamente' })
+  }
+}
 
 async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
     const urlMoodle = process.env.CALENDARIO_MOODLE_API
@@ -29,29 +83,29 @@ async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
         if (isSameDay(dataPrazo, hoje)) {
             eventosHoje += `*${ev.summary}* às *${format(dataPrazo, "HH:mm")}*\n`
         } else if (isSameDay(dataPrazo, lembreteAmanha)) {
-            eventosAmanha += `*${ev.summary}* - *${format(dataPrazo, "dd/MM HH:mm")}*\n`
+            eventosAmanha += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n`
         } else if (isSameDay(dataPrazo, lembrete2dias)) {
-            eventos2dias += `*${ev.summary}* - *${format(dataPrazo, "dd/MM HH:mm")}*\n`
+            eventos2dias += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n`
         } else if (isSameDay(dataPrazo, lembrete3dias)) {
-            eventos3dias += `*${ev.summary}* - *${format(dataPrazo, "dd/MM HH:mm")}*\n`
+            eventos3dias += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n`
         }
     }
 
-    let mensagemFinal = `*LEMBRETE TECH  - ${format(hoje, "dd/MM", { locale: ptBR })} - ${format(lembrete3dias, "dd/MM", { locale: ptBR })}*\n\n`
+    let mensagemFinal = `*LEMBRETE ADS 3°P*\n*${format(hoje, "dd/MM", { locale: ptBR })} a ${format(lembrete3dias, "dd/MM", { locale: ptBR })}*\n\n`
 
-    mensagemFinal += "*HOJE* 🔺\n"
-    mensagemFinal += eventosHoje ? eventosHoje : "Nenhum evento hoje.\n"
+    mensagemFinal += "*Hoje*\n"
+    mensagemFinal += eventosHoje ? eventosHoje : "Sem eventos hoje\n"
 
-    mensagemFinal += "\n*AMANHÃ:*\n"
-    mensagemFinal += eventosAmanha ? eventosAmanha : "Nenhum evento amanhã.\n"
+    mensagemFinal += "\n*Amanhã*\n"
+    mensagemFinal += eventosAmanha ? eventosAmanha : "Sem eventos\n"
 
-    mensagemFinal += "\n*EM 2 DIAS:*\n"
-    mensagemFinal += eventos2dias ? eventos2dias : "Nenhum evento em 2 dias.\n"
+    mensagemFinal += "\n*Em 2 dias*\n"
+    mensagemFinal += eventos2dias ? eventos2dias : "Sem eventos\n"
 
-    mensagemFinal += "\n*EM 3 DIAS:*\n"
-    mensagemFinal += eventos3dias ? eventos3dias : "Nenhum evento em 3 dias.\n"
+    mensagemFinal += "\n*Em 3 dias*\n"
+    mensagemFinal += eventos3dias ? eventos3dias : "Sem eventos\n"
 
-    mensagemFinal += "\n\n*Mensagem automática, considere verificar o AVA*"
+    mensagemFinal += "\n\nMensagem automática, considere verificar o AVA em https://ava.iftm.edu.br/my/"
 
     console.log(mensagemFinal)
     setTimeout(async () => {
@@ -72,7 +126,7 @@ async function start() {
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode
       if (statusCode !== DisconnectReason.loggedOut) start()
-      else console.log('sessão expirada')
+      else console.log('Sessão expirou, faz login de novo')
     }
   })
 
@@ -83,19 +137,29 @@ async function start() {
     if (!msg?.message || msg.key.fromMe) return
 
     const from = msg.key.remoteJid
-    const body = msg.message.conversation|| msg.message.extendedTextMessage?.text || ''
+    const body = msg.message.conversation || msg.message.extendedTextMessage?.text || ''
 
-    if (body === '!lembrete' && from.endsWith('@g.us')) {
+    const temImagem = msg.message.imageMessage || msg.message.videoMessage
+    const caption = msg.message.imageMessage?.caption || ''
+    
+
+    if (temImagem &&  (caption === '!figurinha' || caption.includes('!figurinha'))) {
+      await processarMidiaComoSticker(sock, from, msg)
+
+    } else if (body == '!lembrete') {
+
       const meta = await sock.groupMetadata(from)
       const mentions = meta.participants.map(p => p.id)
-     
       await verificaAgendaAva(mentions, sock, from)
+
+    } else if(body == "!comandos"){
+        await sock.sendMessage(from, { text: `*Comandos:*\n\n!lembrete - Envia os lembretes de prazos do AVA\n\n!figurinha - Faz a figurinha com a foto enviada\n\n!comandos - envia essa mensagem` })
     }
   })
 
  
     cron.schedule("30 09 * * *", async () => {
-        console.log('CRON EXECUTANDO')
+        console.log('Enviando lembretes automáticos')
         const grupoId = process.env.ID_GRUPO_SALA
 
         const meta = await sock.groupMetadata(grupoId)
