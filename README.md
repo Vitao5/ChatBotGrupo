@@ -115,7 +115,6 @@ Edite o arquivo e adicione novos IDs de grupos para os lembretes serem enviados.
 
 - Victor
 - Samuel
-- Lucas
 
 ## 📄 Licença
 
