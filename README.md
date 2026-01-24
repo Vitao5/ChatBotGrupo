@@ -25,7 +25,7 @@ Este projeto utiliza a biblioteca **Baileys** (uma implementação reverse-engin
 
 1. **Clone ou baixe o projeto:**
 ```bash
-git clone <seu-repositorio>
+git clone https://github.com/Vitao5/ChatBotGrupo.git
 cd "ChatBot Grupo"
 ```
 
