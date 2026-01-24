@@ -9,22 +9,6 @@ import { ptBR } from "date-fns/locale"
 import fs from 'fs'
 import sharp from 'sharp'
 
-async function enviarSticker(sock, from, caminhoSticker) {
-  try {
-    if (fs.existsSync(caminhoSticker)) {
-      const stickerBuffer = fs.readFileSync(caminhoSticker)
-      setTimeout(async () => {
-        await sock.sendMessage(from, { sticker: stickerBuffer })
-      }, 1000);
-      setTimeout(async () => {
-        await sock.sendMessage(from, { text: 'Ta na mão ƪ(˘⌣˘)ʃ' })
-      }, 1900);
-    } 
-  } catch (err) {
-    console.error('Erro ao enviar sticker:', err.message)
-  }
-}
-
 async function downloadImagemFigurinha(sock, msg) {
   try {
     const buffer = await downloadMediaMessage(msg, 'buffer', {}, {
@@ -126,7 +110,7 @@ async function start() {
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode
       if (statusCode !== DisconnectReason.loggedOut) start()
-      else console.log('Sessão expirou, faz login de novo')
+      else console.log('sessão expirada')
     }
   })
 
@@ -146,6 +130,10 @@ async function start() {
     if (temImagem &&  (caption === '!figurinha' || caption.includes('!figurinha'))) {
       await processarMidiaComoSticker(sock, from, msg)
 
+            setTimeout(async () => {
+        await sock.sendMessage(from, { text: 'Ta na mão ƪ(˘⌣˘)ʃ' })
+      }, 1900);
+
     } else if (body == '!lembrete') {
 
       const meta = await sock.groupMetadata(from)
@@ -153,12 +141,12 @@ async function start() {
       await verificaAgendaAva(mentions, sock, from)
 
     } else if(body == "!comandos"){
-        await sock.sendMessage(from, { text: `*Comandos:*\n\n!lembrete - Envia os lembretes de prazos do AVA\n\n!figurinha - Faz a figurinha com a foto enviada\n\n!comandos - envia essa mensagem` })
+        await sock.sendMessage(from, { text: `!lembrete  envia os lembretes de prazos do AVA\n\n!figurinha  faz a figurinha com a foto enviada (envie !figurinha como legenda)\n\n!comandos  envia essa mensagem` })
     }
   })
 
  
-    cron.schedule("30 09 * * *", async () => {
+    cron.schedule("00 10 * * *", async () => {
         console.log('Enviando lembretes automáticos')
         const grupoId = process.env.ID_GRUPO_SALA
 
