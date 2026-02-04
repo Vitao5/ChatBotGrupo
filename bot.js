@@ -1,5 +1,6 @@
 import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadMediaMessage } from '@whiskeysockets/baileys'
 import qrcode from 'qrcode-terminal'
+import QRCode from 'qrcode'
 import cron from 'node-cron'
 import P from 'pino'
 import 'dotenv/config'
@@ -106,7 +107,12 @@ async function start() {
   })
 
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
-    if (qr) qrcode.generate(qr, { small: true })
+    if (qr) {
+      qrcode.generate(qr, { small: true })
+      QRCode.toDataURL(qr)
+        .then((url) => console.log('QR_CODE_DATA_URL:', url))
+        .catch((err) => console.log('Falha ao gerar QR em data URL:', err.message))
+    }
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode
       if (statusCode !== DisconnectReason.loggedOut) start()
