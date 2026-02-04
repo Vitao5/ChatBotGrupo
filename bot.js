@@ -117,6 +117,7 @@ async function start() {
   sock.ev.on('creds.update', saveCreds)
 
   sock.ev.on('messages.upsert', async ({ messages }) => {
+    console.log(messages)
     const msg = messages[0]
     if (!msg?.message || msg.key.fromMe) return
 
