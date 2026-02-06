@@ -59,6 +59,8 @@ async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
     let eventos2dias = ""
     let eventos3dias = ""
 
+    if(eventos.lenth == 0) return 
+
     for (let k in eventos) {
         const ev = eventos[k]
         if (ev.type !== "VEVENT") continue
@@ -123,7 +125,6 @@ async function start() {
   sock.ev.on('creds.update', saveCreds)
 
   sock.ev.on('messages.upsert', async ({ messages }) => {
-    console.log(messages)
     const msg = messages[0]
     if (!msg?.message || msg.key.fromMe) return
 
