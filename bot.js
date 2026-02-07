@@ -1,5 +1,6 @@
 import makeWASocket, { DisconnectReason, useMultiFileAuthState, downloadMediaMessage } from '@whiskeysockets/baileys'
 import qrcode from 'qrcode-terminal'
+import QRCode from 'qrcode'
 import cron from 'node-cron'
 import P from 'pino'
 import 'dotenv/config'
@@ -58,6 +59,7 @@ async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
     let eventos2dias = ""
     let eventos3dias = ""
 
+
     for (let k in eventos) {
         const ev = eventos[k]
         if (ev.type !== "VEVENT") continue
@@ -91,7 +93,11 @@ async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
 
     mensagemFinal += "\n\nMensagem automática, considere verificar o AVA em https://ava.iftm.edu.br/my/"
 
-    console.log(mensagemFinal)
+ 
+    if(eventos3dias === "Sem eventos" && eventos2dias === "Sem eventos" && eventosAmanha === "Sem eventos" && eventosHoje === "Sem eventos hoje"){
+      return 
+    }
+
     setTimeout(async () => {
           await sock.sendMessage(from, { text: mensagemFinal, mentions: marcarPessoasGrupo })
     }, 1000);
@@ -106,7 +112,12 @@ async function start() {
   })
 
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
-    if (qr) qrcode.generate(qr, { small: true })
+    if (qr) {
+      qrcode.generate(qr, { small: true })
+      QRCode.toDataURL(qr)
+        .then((url) => console.log('QR_CODE_DATA_URL:', url))
+        .catch((err) => console.log('Falha ao gerar QR em data URL:', err.message))
+    }
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode
       if (statusCode !== DisconnectReason.loggedOut) start()
@@ -147,7 +158,6 @@ async function start() {
 
  
     cron.schedule("00 10 * * *", async () => {
-        console.log('Enviando lembretes automáticos')
         const grupoId = process.env.ID_GRUPO_SALA
 
         const meta = await sock.groupMetadata(grupoId)
