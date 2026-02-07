@@ -59,7 +59,6 @@ async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
     let eventos2dias = ""
     let eventos3dias = ""
 
-    if(eventos.lenth == 0) return 
 
     for (let k in eventos) {
         const ev = eventos[k]
@@ -94,7 +93,11 @@ async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
 
     mensagemFinal += "\n\nMensagem automática, considere verificar o AVA em https://ava.iftm.edu.br/my/"
 
-    console.log(mensagemFinal)
+ 
+    if(eventos3dias === "Sem eventos" && eventos2dias === "Sem eventos" && eventosAmanha === "Sem eventos" && eventosHoje === "Sem eventos hoje"){
+      return 
+    }
+
     setTimeout(async () => {
           await sock.sendMessage(from, { text: mensagemFinal, mentions: marcarPessoasGrupo })
     }, 1000);
@@ -155,7 +158,6 @@ async function start() {
 
  
     cron.schedule("00 10 * * *", async () => {
-        console.log('Enviando lembretes automáticos')
         const grupoId = process.env.ID_GRUPO_SALA
 
         const meta = await sock.groupMetadata(grupoId)
