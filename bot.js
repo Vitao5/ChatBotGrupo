@@ -66,43 +66,41 @@ async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
 
         const dataPrazo = new Date(ev.start)
 
+        console.log(ev)
         if (isSameDay(dataPrazo, hoje)) {
-            eventosHoje += `*${ev.summary}* às *${format(dataPrazo, "HH:mm")}*\n`
+            eventosHoje += `*${ev.summary}* às *${format(dataPrazo, "HH:mm")}*\n\n`
         } else if (isSameDay(dataPrazo, lembreteAmanha)) {
-            eventosAmanha += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n`
+            eventosAmanha += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n\n`
         } else if (isSameDay(dataPrazo, lembrete2dias)) {
-            eventos2dias += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n`
+            eventos2dias += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n\n`
         } else if (isSameDay(dataPrazo, lembrete3dias)) {
-            eventos3dias += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n`
+            eventos3dias += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n\n`
         }
     }
 
     let mensagemFinal = `*LEMBRETE ADS 3°P*\n*${format(hoje, "dd/MM", { locale: ptBR })} a ${format(lembrete3dias, "dd/MM", { locale: ptBR })}*\n\n`
 
-    mensagemFinal += "*Hoje*\n"
+    mensagemFinal += `*Hoje - ${format(hoje, "dd/MM", { locale: ptBR })}*\n`
     mensagemFinal += eventosHoje ? eventosHoje : "Sem eventos hoje\n"
 
-    mensagemFinal += "\n*Amanhã*\n"
+    mensagemFinal += `\n*${format(lembreteAmanha, "EEEE", { locale: ptBR })}  - ${format(lembreteAmanha, "dd/MM", { locale: ptBR })}*\n`
     mensagemFinal += eventosAmanha ? eventosAmanha : "Sem eventos\n"
 
-    mensagemFinal += "\n*Em 2 dias*\n"
+    mensagemFinal += `\n*${format(lembrete2dias, "EEEE", { locale: ptBR })}  - ${format(lembrete2dias, "dd/MM", { locale: ptBR })}*\n`
     mensagemFinal += eventos2dias ? eventos2dias : "Sem eventos\n"
 
-    mensagemFinal += "\n*Em 3 dias*\n"
+    mensagemFinal += `\n*${format(lembrete3dias, "EEEE", { locale: ptBR })}  - ${format(lembrete3dias, "dd/MM", { locale: ptBR })}*\n`
     mensagemFinal += eventos3dias ? eventos3dias : "Sem eventos\n"
 
     mensagemFinal += "\n\nMensagem automática, considere verificar o AVA em https://ava.iftm.edu.br/my/"
 
- 
     const semEventos = !eventosHoje && !eventosAmanha && !eventos2dias && !eventos3dias
-    console.log('sem eventos')
+
     if (semEventos) {
       return
     }
 
-    setTimeout(async () => {
-          await sock.sendMessage(from, { text: mensagemFinal, mentions: marcarPessoasGrupo })
-    }, 1000);
+    await sock.sendMessage(from, { text: mensagemFinal, mentions: marcarPessoasGrupo })
   }
 
 async function start() {
@@ -159,7 +157,7 @@ async function start() {
   })
 
  
-    cron.schedule("15 10 * * *", async () => {
+    cron.schedule("45 20 * * *", async () => {
         const grupoId = process.env.ID_GRUPO_SALA
 
         const meta = await sock.groupMetadata(grupoId)
