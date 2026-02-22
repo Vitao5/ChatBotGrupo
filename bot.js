@@ -5,8 +5,9 @@ import cron from 'node-cron'
 import P from 'pino'
 import 'dotenv/config'
 import ical from "node-ical"
-import { format, addDays, isSameDay } from "date-fns"
+import { format, addDays, isSameDay, startOfDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { toZonedTime } from "date-fns-tz"
 import fs from 'fs'
 import sharp from 'sharp'
 
@@ -49,7 +50,8 @@ async function processarMidiaComoSticker(sock, from, msg) {
 async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
     const urlMoodle = process.env.CALENDARIO_MOODLE_API
     const eventos = await ical.async.fromURL(urlMoodle)
-    const hoje = new Date()
+    const timeZone = "America/Sao_Paulo"
+    const hoje = startOfDay(toZonedTime(new Date(), timeZone))
     const lembreteAmanha = addDays(hoje, 1)
     const lembrete2dias = addDays(hoje, 2)
     const lembrete3dias = addDays(hoje, 3)
@@ -64,24 +66,24 @@ async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
         const ev = eventos[k]
         if (ev.type !== "VEVENT") continue
 
-        const dataPrazo = new Date(ev.start)
+        const dataPrazo = startOfDay(toZonedTime(new Date(ev.start), timeZone))
 
         console.log(ev)
         if (isSameDay(dataPrazo, hoje)) {
-            eventosHoje += `*${ev.summary}* às *${format(dataPrazo, "HH:mm")}*\n\n`
+            eventosHoje += `*${ev.summary}* às *${format(toZonedTime(new Date(ev.start), timeZone), "HH:mm")}*\n\n`
         } else if (isSameDay(dataPrazo, lembreteAmanha)) {
-            eventosAmanha += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n\n`
+            eventosAmanha += `*${ev.summary}* - *${format(toZonedTime(new Date(ev.start), timeZone), "HH:mm")}*\n\n`
         } else if (isSameDay(dataPrazo, lembrete2dias)) {
-            eventos2dias += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n\n`
+            eventos2dias += `*${ev.summary}* - *${format(toZonedTime(new Date(ev.start), timeZone), "HH:mm")}*\n\n`
         } else if (isSameDay(dataPrazo, lembrete3dias)) {
-            eventos3dias += `*${ev.summary}* - *${format(dataPrazo, "HH:mm")}*\n\n`
+            eventos3dias += `*${ev.summary}* - *${format(toZonedTime(new Date(ev.start), timeZone), "HH:mm")}*\n\n`
         }
     }
 
     let mensagemFinal = `*LEMBRETE ADS 3°P*\n*${format(hoje, "dd/MM", { locale: ptBR })} a ${format(lembrete3dias, "dd/MM", { locale: ptBR })}*\n\n`
 
     mensagemFinal += `*Hoje - ${format(hoje, "dd/MM", { locale: ptBR })}*\n`
-    mensagemFinal += eventosHoje ? eventosHoje : "Sem eventos hoje\n"
+    mensagemFinal += eventosHoje ? eventosHoje : "Sem eventos\n"
 
     mensagemFinal += `\n*${format(lembreteAmanha, "EEEE", { locale: ptBR })}  - ${format(lembreteAmanha, "dd/MM", { locale: ptBR })}*\n`
     mensagemFinal += eventosAmanha ? eventosAmanha : "Sem eventos\n"
@@ -157,7 +159,7 @@ async function start() {
   })
 
  
-    cron.schedule("00 10 * * *", async () => {
+    cron.schedule("25 10 * * *", async () => {
         const grupoId = process.env.ID_GRUPO_SALA
 
         const meta = await sock.groupMetadata(grupoId)
