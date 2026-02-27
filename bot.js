@@ -159,7 +159,7 @@ async function start() {
   })
 
  
-    cron.schedule("35 10 * * *", async () => {
+    cron.schedule("00 10 * * *", async () => {
         const grupoId = process.env.ID_GRUPO_SALA
 
         const meta = await sock.groupMetadata(grupoId)
