@@ -133,6 +133,18 @@ async function start() {
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode
       console.log('Conexao fechada. statusCode:', statusCode)
+
+      if (statusCode === 405) {
+        console.log('Status 405: limpando credenciais para novo QR...')
+        try {
+          if (fs.existsSync('./baileys-auth')) {
+            fs.rmSync('./baileys-auth', { recursive: true, force: true })
+          }
+        } catch (err) {
+          console.log('Falha ao limpar credenciais:', err.message)
+        }
+      }
+
       if (statusCode !== DisconnectReason.loggedOut) {
         console.log('Reconectando em 2s...')
         setTimeout(start, 2000)
