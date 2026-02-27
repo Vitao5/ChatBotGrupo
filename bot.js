@@ -125,6 +125,7 @@ async function start() {
       console.log('=====================================================\n')
 
       qrcode.generate(qr, { small: true })
+      
 
       QRCode.toDataURL(qr)
         .then((url) => {
