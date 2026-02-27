@@ -114,21 +114,30 @@ async function start() {
 
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
     if (qr) {
-      
+      console.log('\n==================== NOVO QRCODE ====================')
+      console.log('Se estiver no Railway, copie o data URL abaixo.')
+      console.log('Cole em: https://codebeautify.org/base64-to-image-converter')
+      console.log('=====================================================\n')
+
       qrcode.generate(qr, { small: true })
-      
+
       QRCode.toDataURL(qr)
         .then((url) => {
-          console.log('QRCODE')
+          console.log('=== INICIO QRCODE ===')
           console.log(url)
+          console.log('=== FIM QRCODE ===\n')
         })
         .catch((err) => console.log('ERRO ao gerar QR:', err.message))
     }
+
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode
+      console.log('Conexao fechada. statusCode:', statusCode)
       if (statusCode !== DisconnectReason.loggedOut) {
-        console.log('Reconectando...')
-        start()
+        console.log('Reconectando em 2s...')
+        setTimeout(start, 2000)
+      } else {
+        console.log('Sessao expirada. Precisa re-autenticar.')
       }
     }
   })
