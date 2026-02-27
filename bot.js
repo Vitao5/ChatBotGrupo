@@ -109,21 +109,27 @@ async function start() {
   const { state, saveCreds } = await useMultiFileAuthState('./baileys-auth')
   const sock = makeWASocket({
     auth: state,
-    printQRInTerminal: true, 
     logger: P({ level: 'silent' })
   })
 
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
     if (qr) {
+      
       qrcode.generate(qr, { small: true })
+      
       QRCode.toDataURL(qr)
-        .then((url) => console.log('QR_CODE_DATA_URL:', url))
-        .catch((err) => console.log('Falha ao gerar QR em data URL:', err.message))
+        .then((url) => {
+          console.log('QRCODE')
+          console.log(url)
+        })
+        .catch((err) => console.log('ERRO ao gerar QR:', err.message))
     }
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode
-      if (statusCode !== DisconnectReason.loggedOut) start()
-      else console.log('sessão expirada')
+      if (statusCode !== DisconnectReason.loggedOut) {
+        console.log('Reconectando...')
+        start()
+      }
     }
   })
 
