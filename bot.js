@@ -125,7 +125,7 @@ async function start() {
       console.log('=====================================================\n')
 
       qrcode.generate(qr, { small: true })
-      
+
 
       QRCode.toDataURL(qr)
         .then((url) => {
@@ -141,11 +141,19 @@ async function start() {
       console.log('❌ Conexao fechada. statusCode:', statusCode)
 
       if (statusCode === 405) {
-        console.log('🧹 Status 405: limpando credenciais para novo QR...')
+        console.log('🧹 Status 405: LIMPANDO TODA A PASTA baileys-auth...')
         try {
-          if (fs.existsSync('./baileys-auth/creds.json')) {
-            fs.unlinkSync('./baileys-auth/creds.json')
-            console.log('✅ creds.json removido')
+          if (fs.existsSync('./baileys-auth')) {
+            const files = fs.readdirSync('./baileys-auth')
+            console.log(`📂 Arquivos encontrados (${files.length}):`, files.slice(0, 5).join(', '))
+            
+            files.forEach(file => {
+              fs.unlinkSync(`./baileys-auth/${file}`)
+            })
+            
+            console.log('✅ Todos os arquivos de credenciais foram removidos!')
+          } else {
+            console.log('⚠️ Pasta baileys-auth nao existe')
           }
         } catch (err) {
           console.log('⚠️ Falha ao limpar:', err.message)
