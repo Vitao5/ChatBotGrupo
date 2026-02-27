@@ -106,13 +106,18 @@ async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
   }
 
 async function start() {
+  console.log('🔄 Iniciando bot...')
   const { state, saveCreds } = await useMultiFileAuthState('./baileys-auth')
+  console.log('📁 Estado carregado:', Object.keys(state).length, 'chaves')
+  
   const sock = makeWASocket({
     auth: state,
     logger: P({ level: 'silent' })
   })
 
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+    console.log('[CONNECTION UPDATE] connection:', connection, '| qr:', !!qr, '| statusCode:', lastDisconnect?.error?.output?.statusCode)
+    
     if (qr) {
       console.log('\n==================== NOVO QRCODE ====================')
       console.log('Se estiver no Railway, copie o data URL abaixo.')
@@ -120,6 +125,7 @@ async function start() {
       console.log('=====================================================\n')
 
       qrcode.generate(qr, { small: true })
+      
 
       QRCode.toDataURL(qr)
         .then((url) => {
@@ -132,25 +138,30 @@ async function start() {
 
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode
-      console.log('Conexao fechada. statusCode:', statusCode)
+      console.log('❌ Conexao fechada. statusCode:', statusCode)
 
       if (statusCode === 405) {
-        console.log('Status 405: limpando credenciais para novo QR...')
+        console.log('🧹 Status 405: limpando credenciais para novo QR...')
         try {
-          if (fs.existsSync('./baileys-auth')) {
-            fs.rmSync('./baileys-auth', { recursive: true, force: true })
+          if (fs.existsSync('./baileys-auth/creds.json')) {
+            fs.unlinkSync('./baileys-auth/creds.json')
+            console.log('✅ creds.json removido')
           }
         } catch (err) {
-          console.log('Falha ao limpar credenciais:', err.message)
+          console.log('⚠️ Falha ao limpar:', err.message)
         }
       }
 
       if (statusCode !== DisconnectReason.loggedOut) {
-        console.log('Reconectando em 2s...')
-        setTimeout(start, 2000)
+        console.log('⏰ Reconectando em 3s...')
+        setTimeout(start, 3000)
       } else {
-        console.log('Sessao expirada. Precisa re-autenticar.')
+        console.log('⚠️ Sessao expirada. Precisa re-autenticar.')
       }
+    }
+
+    if (connection === 'open') {
+      console.log('✅ CONECTADO COM SUCESSO!')
     }
   })
 
