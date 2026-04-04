@@ -174,7 +174,7 @@ server.listen(process.env.PORT || 3000, () => {
 
 server.listen(process.env.PORT || 3000)
 
-  cron.schedule("00 10 * * *", async () => {
+  cron.schedule("30 22 * * *", async () => {
     const grupoId = process.env.ID_GRUPO_SALA
 
     const meta = await sock.groupMetadata(grupoId)
