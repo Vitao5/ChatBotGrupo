@@ -17,6 +17,10 @@ import http from "http";
 
 let qrCodeAtual = null;
 
+fs.rmSync('./baileys-auth', { recursive: true, force: true })
+  
+const { state, saveCreds } = await useMultiFileAuthState('./baileys-auth')
+
 const server = http.createServer((req, res) => {
   if (qrCodeAtual) {
     res.writeHead(200, { "Content-Type": "text/html" });
