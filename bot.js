@@ -9,6 +9,7 @@ import { format, addDays, isSameDay, startOfDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { toZonedTime } from "date-fns-tz"
 import sharp from 'sharp'
+import http from 'http'  
 
 async function downloadImagemFigurinha(sock, msg) {
   try {
@@ -158,6 +159,20 @@ async function start() {
     }
   })
 
+
+///TENTA MANTER O BOT ONLINE
+//NÃO REMOVER
+const server = http.createServer((req, res) => {
+  res.writeHead(200)
+  res.end('Bot online')
+})
+
+server.listen(process.env.PORT || 3000, () => {
+  console.log('Servidor ON')
+})
+
+
+server.listen(process.env.PORT || 3000)
 
   cron.schedule("00 10 * * *", async () => {
     const grupoId = process.env.ID_GRUPO_SALA
