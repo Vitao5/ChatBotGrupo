@@ -14,6 +14,7 @@ import { ptBR } from "date-fns/locale";
 import { toZonedTime } from "date-fns-tz";
 import sharp from "sharp";
 import http from "http";
+import fs from 'fs'
 
 let qrCodeAtual = null;
 
