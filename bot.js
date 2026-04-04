@@ -9,7 +9,7 @@ import { format, addDays, isSameDay, startOfDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { toZonedTime } from "date-fns-tz"
 import sharp from 'sharp'
-import http from 'http'  
+import http from 'http'
 
 async function downloadImagemFigurinha(sock, msg) {
   try {
@@ -117,14 +117,10 @@ async function start() {
 
     if (qr) {
       qrcode.generate(qr, { small: true })
-
-      QRCode.toDataURL(qr)
-        .then((url) => {
-          console.log('=== INICIO QRCODE ===')
-          console.log(url)
-          console.log('=== FIM QRCODE ===\n')
-        })
-        .catch((err) => console.log('ERRO ao gerar QR:', err.message))
+      QRCode.toDataURL(qr).then((url) => {
+        qrCodeAtual = url  // salva para servir via HTTP
+        console.log('QR gerado, acesse a URL do serviço')
+      })
     }
   })
 
@@ -160,16 +156,26 @@ async function start() {
   })
 
 
-///TENTA MANTER O BOT ONLINE
-//NÃO REMOVER
-const server = http.createServer((req, res) => {
-  res.writeHead(200)
-  res.end('Bot online')
-})
+
+  let qrCodeAtual = null
+
+  const server = http.createServer((req, res) => {
+    res.writeHead(200)
+    res.end('Bot online')
+    if (qrCodeAtual) {
+      res.writeHead(200, { 'Content-Type': 'text/html' })
+      res.end(`<img src="${qrCodeAtual}" style="width:300px"/>`)
+    } else {
+      res.writeHead(200, { 'Content-Type': 'text/plain' })
+      res.end('QR Code ainda não gerado ou já autenticado')
+    }
+  })
 
 
-server.listen(process.env.PORT || 3000)
- console.log('Servidor ON')
+
+
+  server.listen(process.env.PORT || 3000)
+  console.log('Servidor ON')
 
   cron.schedule("40 22 * * *", async () => {
     const grupoId = process.env.ID_GRUPO_SALA
