@@ -167,14 +167,11 @@ const server = http.createServer((req, res) => {
   res.end('Bot online')
 })
 
-server.listen(process.env.PORT || 3000, () => {
-  console.log('Servidor ON')
-})
-
 
 server.listen(process.env.PORT || 3000)
+ console.log('Servidor ON')
 
-  cron.schedule("30 22 * * *", async () => {
+  cron.schedule("40 22 * * *", async () => {
     const grupoId = process.env.ID_GRUPO_SALA
 
     const meta = await sock.groupMetadata(grupoId)
