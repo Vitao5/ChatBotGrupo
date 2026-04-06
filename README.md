@@ -110,6 +110,31 @@ Edite o arquivo e adicione novos IDs de grupos para os lembretes serem enviados.
 - A pasta `baileys-auth/` é gerada automaticamente na primeira execução
 - O bot usa sua conta do WhatsApp - não é uma conta bot oficial
 
+## 🌐 Render Free + Persistência de Sessão
+
+No plano free do Render, o sistema de arquivos e efêmero. Isso significa que a pasta `baileys-auth/` pode sumir em restart/deploy.
+
+Para manter a sessão mesmo no Render Free, o projeto suporta sync externo via JSONBin:
+
+1. Crie um bin no JSONBin e copie:
+- `BIN_ID`
+- `MASTER_KEY`
+
+2. No Render, configure variáveis de ambiente:
+- `JSONBIN_AUTH_SYNC=true`
+- `JSONBIN_BIN_ID=<seu_bin_id>`
+- `JSONBIN_API_KEY=<sua_master_key>`
+- `FORCE_NEW_AUTH=true` apenas no primeiro deploy para gerar novo QR
+
+3. Abra a URL do serviço:
+- `/` mostra status da conexão
+- `/qr` mostra o QR quando disponível
+
+4. Após parear no WhatsApp, altere:
+- `FORCE_NEW_AUTH=false`
+
+Com isso, o bot restaura a sessão do JSONBin no boot e sincroniza credenciais automaticamente quando atualizam.
+
 
 ## 👥 Autores
 

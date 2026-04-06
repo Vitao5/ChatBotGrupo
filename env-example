@@ -1,3 +1,12 @@
 ID_GRUPO_SALA=
 NUMERO_BOT=
 CALENDARIO_MOODLE_API=
+
+# Auth Baileys
+AUTH_PATH=./baileys-auth
+FORCE_NEW_AUTH=false
+
+# Persistencia para Render Free (JSONBin)
+JSONBIN_AUTH_SYNC=false
+JSONBIN_BIN_ID=
+JSONBIN_API_KEY=

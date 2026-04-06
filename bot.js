@@ -11,16 +11,119 @@ import { toZonedTime } from "date-fns-tz"
 import sharp from "sharp"
 import http from "http"
 import fs from "fs"
+import path from "path"
+import axios from "axios"
 
 let qrCodeAtual = null
+let statusConexao = "iniciando"
+let ultimoErroConexao = null
+let reconnectTimer = null
+let authSyncTimer = null
+
+function lerArquivosAuth(authPath) {
+  if (!fs.existsSync(authPath)) return {}
+  const files = fs.readdirSync(authPath, { withFileTypes: true })
+  const data = {}
+
+  for (const file of files) {
+    if (!file.isFile()) continue
+    const absolute = path.join(authPath, file.name)
+    const content = fs.readFileSync(absolute)
+    data[file.name] = content.toString("base64")
+  }
+
+  return data
+}
+
+function escreverArquivosAuth(authPath, filesMap) {
+  fs.mkdirSync(authPath, { recursive: true })
+  const names = Object.keys(filesMap || {})
+
+  for (const name of names) {
+    const absolute = path.join(authPath, name)
+    fs.writeFileSync(absolute, Buffer.from(filesMap[name], "base64"))
+  }
+}
+
+async function restaurarSessaoExterna(authPath) {
+  const binId = process.env.JSONBIN_BIN_ID
+  const apiKey = process.env.JSONBIN_API_KEY
+  const enabled = process.env.JSONBIN_AUTH_SYNC === "true"
+
+  if (!enabled || !binId || !apiKey) return
+
+  try {
+    const url = `https://api.jsonbin.io/v3/b/${binId}/latest`
+    const response = await axios.get(url, {
+      headers: {
+        "X-Master-Key": apiKey,
+      },
+      timeout: 15000,
+    })
+
+    const filesMap = response.data?.record?.files || {}
+    const hasFiles = Object.keys(filesMap).length > 0
+    if (!hasFiles) return
+
+    escreverArquivosAuth(authPath, filesMap)
+    console.log("Sessão restaurada do JSONBin")
+  } catch (err) {
+    console.log("Falha ao restaurar sessão externa:", err.message)
+  }
+}
+
+async function salvarSessaoExterna(authPath) {
+  const binId = process.env.JSONBIN_BIN_ID
+  const apiKey = process.env.JSONBIN_API_KEY
+  const enabled = process.env.JSONBIN_AUTH_SYNC === "true"
+
+  if (!enabled || !binId || !apiKey) return
+
+  try {
+    const files = lerArquivosAuth(authPath)
+    const hasFiles = Object.keys(files).length > 0
+    if (!hasFiles) return
+
+    const url = `https://api.jsonbin.io/v3/b/${binId}`
+    await axios.put(url, {
+      files,
+      updatedAt: new Date().toISOString(),
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Master-Key": apiKey,
+      },
+      timeout: 15000,
+    })
+
+    console.log("Sessão sincronizada no JSONBin")
+  } catch (err) {
+    console.log("Falha ao sincronizar sessão externa:", err.message)
+  }
+}
+
+function agendarSyncSessao(authPath) {
+  if (authSyncTimer) clearTimeout(authSyncTimer)
+  authSyncTimer = setTimeout(() => {
+    authSyncTimer = null
+    salvarSessaoExterna(authPath)
+  }, 4000)
+}
 
 const server = http.createServer((req, res) => {
-  if (qrCodeAtual) {
+  const rota = req.url || "/"
+
+  if (rota === "/qr" && qrCodeAtual) {
     res.writeHead(200, { "Content-Type": "text/html" })
     res.end(`<img src="${qrCodeAtual}" style="width:300px"/>`)
   } else {
-    res.writeHead(200, { "Content-Type": "text/plain" })
-    res.end("Bot online ou QR ainda não gerado")
+    res.writeHead(200, { "Content-Type": "application/json" })
+    res.end(JSON.stringify({
+      status: statusConexao,
+      qrDisponivel: Boolean(qrCodeAtual),
+      rotaQr: "/qr",
+      ultimoErroConexao,
+    }))
   }
 })
 
@@ -103,10 +206,16 @@ async function verificaAgendaAva(marcarPessoasGrupo, sock, from) {
 }
 
 async function start() {
-  // Apaga sessão antiga para forçar novo QR
-  fs.rmSync("./baileys-auth", { recursive: true, force: true })
+  const authPath = process.env.AUTH_PATH || "./baileys-auth"
 
-  const { state, saveCreds } = await useMultiFileAuthState("./baileys-auth")
+  if (process.env.FORCE_NEW_AUTH === "true") {
+    fs.rmSync(authPath, { recursive: true, force: true })
+    console.log("Sessão removida por FORCE_NEW_AUTH=true")
+  }
+
+  await restaurarSessaoExterna(authPath)
+
+  const { state, saveCreds } = await useMultiFileAuthState(authPath)
 
   const sock = makeWASocket({
     auth: state,
@@ -115,15 +224,47 @@ async function start() {
 
   sock.ev.on("connection.update", ({ connection, lastDisconnect, qr }) => {
     if (qr) {
+      statusConexao = "aguardando_qr"
       qrcode.generate(qr, { small: true })
       QRCode.toDataURL(qr).then((url) => {
         qrCodeAtual = url
         console.log("QR gerado! Acesse a URL do serviço para escanear")
       })
     }
+
+    if (connection === "open") {
+      statusConexao = "conectado"
+      qrCodeAtual = null
+      ultimoErroConexao = null
+      console.log("WhatsApp conectado com sucesso")
+    }
+
+    if (connection === "close") {
+      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401
+      statusConexao = shouldReconnect ? "reconectando" : "desconectado"
+      ultimoErroConexao = String(lastDisconnect?.error?.message || "conexao_encerrada")
+
+      if (shouldReconnect) {
+        if (reconnectTimer) return
+        console.log("Conexão fechada, tentando reconectar em 5s...")
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null
+          start().catch((err) => {
+            console.log("Falha ao reiniciar conexão:", err.message)
+          })
+        }, 5000)
+      } else {
+        // Sessão inválida: remove credenciais para forçar novo pareamento na próxima inicialização.
+        fs.rmSync(path.resolve(authPath), { recursive: true, force: true })
+        console.log("Sessão inválida. Reinicie o serviço para gerar novo QR.")
+      }
+    }
   })
 
-  sock.ev.on("creds.update", saveCreds)
+  sock.ev.on("creds.update", async () => {
+    await saveCreds()
+    agendarSyncSessao(authPath)
+  })
 
   sock.ev.on("messages.upsert", async ({ messages }) => {
     const msg = messages[0]
