@@ -19,6 +19,8 @@ let statusConexao = "iniciando"
 let ultimoErroConexao = null
 let reconnectTimer = null
 let authSyncTimer = null
+let reconnectAttempts = 0
+let cleanAuthAlreadyTried = false
 
 function lerArquivosAuth(authPath) {
   if (!fs.existsSync(authPath)) return {}
@@ -123,6 +125,8 @@ const server = http.createServer((req, res) => {
       qrDisponivel: Boolean(qrCodeAtual),
       rotaQr: "/qr",
       ultimoErroConexao,
+      tentativasReconexao: reconnectAttempts,
+      dica: "Se ficar em reconectando por muito tempo, verifique JSONBIN_* e tente FORCE_NEW_AUTH=true por um deploy.",
     }))
   }
 })
@@ -236,6 +240,8 @@ async function start() {
       statusConexao = "conectado"
       qrCodeAtual = null
       ultimoErroConexao = null
+      reconnectAttempts = 0
+      cleanAuthAlreadyTried = false
       console.log("WhatsApp conectado com sucesso")
     }
 
@@ -243,6 +249,14 @@ async function start() {
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401
       statusConexao = shouldReconnect ? "reconectando" : "desconectado"
       ultimoErroConexao = String(lastDisconnect?.error?.message || "conexao_encerrada")
+      reconnectAttempts += 1
+      const hasSessionFiles = fs.existsSync(path.resolve(authPath, "creds.json"))
+
+      if (shouldReconnect && !qrCodeAtual && reconnectAttempts >= 6 && hasSessionFiles && !cleanAuthAlreadyTried) {
+        cleanAuthAlreadyTried = true
+        console.log("Falhas repetidas sem QR; limpando sessão local para forçar novo pareamento...")
+        fs.rmSync(path.resolve(authPath), { recursive: true, force: true })
+      }
 
       if (shouldReconnect) {
         if (reconnectTimer) return
